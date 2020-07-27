@@ -13,13 +13,26 @@ task:
       format: golangci
 
 docker_builder:
-  name: Test
+  name: Test (Linux)
   test_script:
     - wget --no-verbose -O - https://golang.org/dl/go1.14.6.linux-amd64.tar.gz | tar -C /usr/local -xz
     - export PATH=$PATH:/usr/local/go/bin
     - go test -v -p 1 ./...
   env:
     HOME: /root
+
+task:
+  osx_instance:
+    image: catalina-base
+  name: Test (macOS)
+  test_script:
+    - brew install docker
+    - brew cask install docker
+    - /Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unattended
+    - cat "~/Library/Group Containers/group.com.docker/settings.json"
+    - docker info
+    - brew install go
+    - go test -v -p 1 ./...
 
 task:
   name: Release
