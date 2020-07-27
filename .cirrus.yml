@@ -13,13 +13,24 @@ task:
       format: golangci
 
 docker_builder:
-  name: Test
+  name: Test (Linux)
   test_script:
     - wget --no-verbose -O - https://golang.org/dl/go1.14.6.linux-amd64.tar.gz | tar -C /usr/local -xz
     - export PATH=$PATH:/usr/local/go/bin
     - go test -v -p 1 ./...
   env:
     HOME: /root
+
+docker_builder:
+  name: Test (Windows)
+  platform: windows
+  os_version: 2019
+  prepare_script: .ci/prepare-docker.bat
+  test_script:
+    - choco install -y golang
+    - md C:\Windows\system32\config\systemprofile\AppData\Local\Temp
+    - docker pull gcr.io/cirrus-ci-community/cirrus-ci-agent:v1.1
+    - go test -v -p 1 ./...
 
 task:
   name: Release
