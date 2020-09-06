@@ -101,20 +101,7 @@ func getDockerBridgeIP() string {
 
 // Start creates the listener and starts RPC server in a separate goroutine.
 func (r *RPC) Start() {
-	host := "localhost"
-
-	// Work around host.docker.internal missing on Linux
-	//
-	// See the following tickets:
-	// * https://github.com/docker/for-linux/issues/264
-	// * https://github.com/moby/moby/pull/40007
-	if runtime.GOOS == "linux" {
-		host = getDockerBridgeIP()
-	}
-
-	address := fmt.Sprintf("%s:0", host)
-
-	listener, err := net.Listen("tcp", address)
+	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		panic(err)
 	}
@@ -135,12 +122,16 @@ func (r *RPC) Start() {
 
 // Endpoint returns RPC server address suitable for use in agent's "-api-endpoint" flag.
 func (r *RPC) Endpoint() string {
-	// Work around host.docker.internal missing on Linux
-	if runtime.GOOS == "linux" {
-		return "http://" + r.listener.Addr().String()
-	}
-
 	port := r.listener.Addr().(*net.TCPAddr).Port
+
+	if runtime.GOOS == "linux" {
+		// Work around host.docker.internal missing on Linux
+		//
+		// See the following tickets:
+		// * https://github.com/docker/for-linux/issues/264
+		// * https://github.com/moby/moby/pull/40007
+		return fmt.Sprintf("http://%s:%d", getDockerBridgeIP(), port)
+	}
 
 	return fmt.Sprintf("http://host.docker.internal:%d", port)
 }
