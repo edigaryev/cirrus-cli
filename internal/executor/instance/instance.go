@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cirruslabs/cirrus-ci-agent/api"
-	"github.com/cirruslabs/cirrus-cli/internal/executor/heuristic"
 	"github.com/cirruslabs/cirrus-cli/internal/executor/options"
 	"github.com/cirruslabs/echelon"
 	"github.com/docker/docker/api/types"
@@ -18,6 +17,7 @@ import (
 	"io/ioutil"
 	"math"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -171,10 +171,14 @@ func RunDockerizedAgent(ctx context.Context, config *RunConfig, params *Params) 
 		},
 	}
 
-	// Attach the container to the Cloud Build network for RPC server
-	// to be accessible in case we're running in Cloud Build.
-	if heuristic.GetCloudBuildIP(ctx) != "" {
-		hostConfig.NetworkMode = heuristic.CloudBuildNetworkName
+	if runtime.GOOS == "linux" {
+		socketPath := strings.TrimPrefix(config.Endpoint, "unix://")
+
+		hostConfig.Mounts = append(hostConfig.Mounts, mount.Mount{
+			Type:   mount.TypeBind,
+			Source: socketPath,
+			Target: socketPath,
+		})
 	}
 
 	// In dirty mode we mount the project directory in read-write mode
